@@ -1,2 +1,1 @@
-Testowe repo
-Data: 06.01.2021
+Repo for VBA code for AutoCAD. The macros extend AutoCAD with new functionalities that AutoCAD lacks.
