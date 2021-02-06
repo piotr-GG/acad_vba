@@ -426,28 +426,6 @@ Function PrintArray(arr As Variant)
     Next i
 End Function
 
-Sub Test11()
-    Dim lay As AcadLayout
-    Set lay = ThisDrawing.Layouts.Item(0)
-    Dim paperSize(2) As Double
-    Debug.Print "Config Name: ", lay.ConfigName
-    Debug.Print "Center Plot: ", lay.CenterPlot
-    
-    lay.GetPaperSize paperSize(0), paperSize(1)
-    Debug.Print "Paper Size Width: ", paperSize(0)
-    Debug.Print "Paper Size Height: ", paperSize(1)
-    
-    Dim lowerLeft As Variant, upperRight As Variant
-    lay.GetWindowToPlot lowerLeft, upperRight
-    
-    Debug.Print "Window To Plot, Lower Left: ", lowerLeft(0), lowerLeft(1)
-    Debug.Print "Window To Plot, Upper Right: ", upperRight(0), upperRight(1)
-    
-    Debug.Print "Style sheet: ", lay.StyleSheet
-    
-    Debug.Print lay.ViewToPlot
-End Sub
-
 
 Sub ArrangeLayouts_A4()
     '*****  DEKLARACJA ZMIENNYCH *****
@@ -532,19 +510,7 @@ Sub ArrangeLayouts_A4()
     lowerLeftPt(1) = mSpacePoint_1(1): lowerLeftPt(2) = 0
     
     upperRightPt(1) = upperRightPt(1): upperRightPt(2) = upperRightPt(2)
-    
-'    ThisDrawing.ActiveLayout = ThisDrawing.Layouts("1")
-'    For Each aEnt In ThisDrawing.ActiveLayout.Block
-'        If TypeOf aEnt Is AcadPViewport Then
-'            Set aPVPort = aEnt
-'            Dim lowerLeftBBox As Variant, upperRightBBox As Variant
-'            aPVPort.GetBoundingBox lowerLeftBBox, upperRightBBox
-'            Debug.Print lowerLeftBBox(0), lowerLeftBBox(1)
-'            Debug.Print upperRightBBox(0), upperRightBBox(1)
-'            Exit For
-'        End If
-'    Next aEnt
-                
+           
     'Zaczynamy od konca i iterujemy do poczatku
     For i = nOfLayouts To lastLayoutNumber Step -1
         'Kopiujemy layout numer 1
@@ -999,7 +965,7 @@ Sub FillTable()
         Exit Sub
     End If
     
-    wkShtName = "32145-000-DW-1576-00 - Tabele materia³owe.xlsx"
+    wkShtName = ""
     Set xlApp = GetObject(, "Excel.Application")
     
     For Each xlWb In xlApp.Workbooks
@@ -1026,13 +992,7 @@ Sub FillTable()
                 
             Next i
         End If
-        'classDict.Add key:=xlSht.Name, Item:=classDataDict
     Next xlSht
-    
-'    Dim key As Variant
-'    For Each key In classDataDict.Keys
-'        MsgBox key & " : " & classDataDict(key)(0)
-'    Next key
     
     tRows = aTable.Rows
     tCols = aTable.Columns
@@ -1065,7 +1025,7 @@ Sub FillTagTable()
     End If
     
     Dim wkShtName As String
-    wkShtName = "32145-000-DW-1576-00 - Typowe schematy monta¿owe.xlsx"
+    wkShtName = ""
     
     Dim xlApp As Excel.Application
     Set xlApp = GetObject(, "Excel.Application")
@@ -1126,11 +1086,6 @@ Sub FillTagTable()
     
 End Sub
 
-
-
-
-
-
 Sub InsertData()
     Dim xlApp As Excel.Application
     Dim xlWb As Excel.Workbook, thisWb As Excel.Workbook
@@ -1150,7 +1105,7 @@ Sub InsertData()
         Exit Sub
     End If
     
-    wkShtName = "32145-000-DW-1576-00 - Tabele materia³owe.xlsx"
+    wkShtName = ""
     Set xlApp = GetObject(, "Excel.Application")
     
     For Each xlWb In xlApp.Workbooks
@@ -1171,7 +1126,6 @@ Sub InsertData()
                 classDataDict.Add key:=xlSht.Cells(i, 1).text, Item:=data
             Next i
         End If
-        'classDict.Add key:=xlSht.Name, Item:=classDataDict
     Next xlSht
     
     Dim key As Variant
@@ -1300,7 +1254,7 @@ Private Function BubbleSortByInsertionPoint_MText(ArrayToBeSorted() As AcadMText
                 Next i
         Case Else:
             'Inna wartoœæ ni¿ acAscending lub acDescending
-        Exit Function
+			Exit Function
     End Select
     'Zwrócenie posortowanej tablicy
     BubbleSortByInsertionPoint_MText = ArrayToBeSorted
@@ -1676,8 +1630,6 @@ Sub BreakLineInParts()
     
 End Sub
 
-
-
 Sub LoopThroughAtts()
     Dim textObj As aCadText
     Dim aEnt As AcadEntity
@@ -2023,26 +1975,6 @@ Sub MTextsIntoTags()
     tagNumber = GetTagListAndSelect(blockRefArray)
     
     Dim attRef As AcadAttributeReference
-    
-    '*****  UTWORZENIE TABLICY Z TEKSTAMI *****
-    
-'    For i = LBound(blockRefArray) To UBound(blockRefArray)
-'        Set blockObj = blockRefArray(i)
-'        ReDim Preserve textArray(txtCount)
-'        If blockObj.HasAttributes Then
-'            varAttributes = blockRefArray(i).GetAttributes
-'            If UBound(varAttributes) - LBound(varAttributes) > 1 Then
-'                Set attRef = varAttributes(tagNumber)
-'                textArray(txtCount) = attRef.textString
-'            Else
-'                textArray(txtCount) = ""
-'            End If
-'        Else
-'        textArray(txtCount) = ""
-'        End If
-'        txtCount = txtCount + 1
-'    Next i
-    
 End Sub
 
 Sub GetTextToExcel()
@@ -2345,38 +2277,6 @@ Sub AddDivisionRectangle()
     
 End Sub
 
-
-Sub TableToUpperCase()
-
-
-    Dim acadTable As acadTable
-    Dim sset As AcadSelectionSet
-    Dim filterType(0) As Variant, filterData(0) As Variant
-    filterType(0) = acFilterByObjectType: filterData(0) = "TABLE"
-    
-    Set sset = GetFilteredSelectionSet(filterType, filterData)
-    
-'    Dim insPt As Variant, tagString As String
-'    Dim lowerLeft As Variant, upperRight As Variant
-'    Dim width As Double
-'
-'    Dim newText As AcadMText
-'
-'    For Each attDef In sSet
-'        insPt = attDef.insertionPoint
-'        tagString = attDef.tagString
-'        attDef.GetBoundingBox lowerLeft, upperRight
-'        width = (upperRight(0) - lowerLeft(0)) * 1.2
-'        Set newText = ThisDrawing.ModelSpace.AddMText(insPt, width, tagString)
-'
-'        newText.AttachmentPoint = acAttachmentPointBottomLeft
-'        newText.insertionPoint = insPt
-'        newText.Update
-'
-'        attDef.Delete
-'    Next attDef
-End Sub
-
 Sub ExcelTableToAutoCad()
 
     Dim aTable As acadTable
@@ -2561,7 +2461,6 @@ Sub BrowseThroughQSelectSelectionSet()
     Do
         Dim userInput As String
         userInput = ThisDrawing.Utility.GetKeyword("[Dalej/Oddal/Przybli¿/Koniec]")
-        Debug.Print userInput
         Select Case (userInput)
             Case "Dalej"
                 counter = counter + 1
@@ -2584,16 +2483,6 @@ Sub BrowseThroughQSelectSelectionSet()
         End Select
     Loop While (True)
     
-    
-'    For Each aEnt In selSet
-'        aEnt.GetBoundingBox lowerLeftPt, upperRightPt
-'        ThisDrawing.Application.ZoomWindow lowerLeftPt, upperRightPt
-'        Dim userInput As String
-'        userInput = ThisDrawing.Utility.GetKeyword("[Dalej/Oddal/Przybli¿/Koniec]")
-'        Debug.Print userInput
-'
-'
-'    Next aEnt
 End Sub
 
 Sub FindGivenValves()
@@ -2602,14 +2491,14 @@ Sub FindGivenValves()
     Dim tagArray As Variant
     Dim atts As Variant
     Dim tagAttRef As AcadAttributeReference
-    tagArray = Array("2-FV-8001", " 2-FV-8002", "2-FV-8003", "2-FV-8007", "2-HV-8004", "2-LV-001", "2-LV-8002", "2-PV-8003", "2-TV-8007", "2-TV-8013", "2-TV-8021", "2-XV-8004", "2-XV-8038", "3-XV-8013", "3-XV-8046")
+    tagArray = Array("...", "...", "...")     'tablica z tagami do znalezienia
 
     Dim counter As Long
     Dim tagString As String
     For Each aEnt In ThisDrawing.ModelSpace
         If TypeOf aEnt Is AcadBlockReference Then
             Set blkRef = aEnt
-            If blkRef.EffectiveName = "DCS_CV" Or blkRef.EffectiveName = "ESD_OOV" Then
+            If blkRef.EffectiveName = "..." Or blkRef.EffectiveName = "..." Then   'szukanie tylko w blokach o danej nazwie
                 atts = blkRef.GetAttributes
                 Set tagAttRef = atts(0)
                 tagString = VBA.Replace(tagAttRef.textString, "\W0.8000;", "")
@@ -2626,7 +2515,7 @@ End Sub
 
 Function IsInArray(text As String, arr As Variant) As Boolean
     IsInArray = False
-    
+	
     If IsArray(arr) = False Then
         Exit Function
     End If
@@ -2640,8 +2529,6 @@ Function IsInArray(text As String, arr As Variant) As Boolean
     Next element
     
 End Function
-
-
 
 Sub ExportXAndYOfBLocks()
 
