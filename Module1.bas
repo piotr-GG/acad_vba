@@ -17,88 +17,135 @@ Const acErrorBlankSpaceClicked As Long = -2147352567
 Const acErrorKeywordSelected As Long = -2145320928
 
 
-Sub AutoNumberPages()
+Sub ArrangeLayouts()
     '*****  DEKLARACJA ZMIENNYCH *****
-    'Do przechowywania nazwy bloku, ktory ma zostac ponumerowany
-    Dim blockName As String
-    Dim selectionSet As AcadSelectionSet
-    Dim blockRefObj As AcadBlockReference
-    Dim ent As AcadEntity
+    Dim i As Integer, nOfLayouts As Integer
+    Dim distanceBetween As Double
+    Dim Layout As AcadLayout
+    Dim mSpacePoint_1 As Variant
+    Dim mSpacePoint_2 As Variant
+    Dim pSpacePoint_1 As Variant
+    Dim pSpacePoint_2 As Variant
     
-    'Do przechowywania atrybutów
-    Dim varAttributes As Variant
-    Dim attRef As AcadAttributeReference
-    
-    'Do przechowywania referencji bloków
-    Dim blockRefArray() As AcadBlockReference
-    'Tablica dynamiczna
-    ReDim blockRefArray(0)
-    
-    Dim blockCount As Integer, i As Integer, j As Integer, pageCount As Integer
-    
-    '*****  WYBÓR BLOKU *****
-    
-    Dim blockRef As AcadBlockReference
-    Set blockRef = PickBlockReference
-    
-    If blockRef Is Nothing Then
-        MsgBox "Nie wybrano bloku!", vbCritical
-        Exit Sub
-    Else
-        blockName = blockRef.EffectiveName
-    End If
-    
-    pageCount = 1
-    i = 0: j = 0: blockCount = 0
-    
-    '*****  FILTROWANIE *****
-    'Dane do filtru
-    Dim filterType(1) As Variant, filterData(1) As Variant
-    
-    'Filtrowanie po typie obiektu - AcadBlockReference
-    filterType(0) = acFilterByObjectType: filterData(0) = acBlockRef
-    'Filtrowanie po nazwie obiektu - BlockName
-    filterType(1) = acFilterByObjectName: filterData(1) = blockName
-    'Wybor selection setem z filtrem
-    Set selectionSet = GetFilteredSelectionSet(filterType, filterData)
-    
-    '*****  DODANIE DO TABLICY *****
-    
-    'Przeiterowanie po selection secie i dodanie referencji bloków do tablicy
-    blockRefArray = GetItemsFromSelectionSet(selectionSet)
-    
-    On Error Resume Next
-    Debug.Print selectionSet.count
-    If Err.Number = -2147467259 Then
-        MsgBox "B³¹d VBA. Zrestartuj AutoCADa"
-        Exit Sub
-    End If
     On Error GoTo 0
     
-    '*****  SORTOWANIE BLOKÓW *****
+    Dim layoutRegenCTL As Integer
+    layoutRegenCTL = ThisDrawing.GetVariable("LAYOUTREGENCTL")
+    
+    ThisDrawing.SetVariable "LAYOUTREGENCTL", 0
+    
+    ThisDrawing.Utility.InitializeUserInput 2, "T N"
+    Dim setNewPoints As String
+    setNewPoints = ThisDrawing.Utility.GetString(1, prompt:="Ustawic nowe punkty na MSpace i PSpace [Tak/Nie]?")
+    
+    Select Case (setNewPoints)
+        Case "T"
+            '*****  KASOWANIE ISTNIEJACYCH LAYOUTÓW *****
+            MsgBox "Ustaw punkty na modelu", vbInformation
+            
+            ThisDrawing.ActiveSpace = acModelSpace
+            mSpacePoint_1 = ThisDrawing.Utility.GetPoint(prompt:="Lewy dolny róg na modelu")
+            mSpacePoint_2 = ThisDrawing.Utility.GetPoint(prompt:="Prawy górny róg na modelu")
+            ThisDrawing.ActiveSpace = acPaperSpace
+            MsgBox "Ustaw punkty na layoucie", vbInformation
+            ThisDrawing.MSpace = False
+            pSpacePoint_1 = ThisDrawing.Utility.GetPoint(prompt:="Lewy dolny róg na layoucie")
+            pSpacePoint_2 = ThisDrawing.Utility.GetPoint(prompt:="Prawy górny róg na layoucie")
+            ThisDrawing.ActiveSpace = acModelSpace
+            
+        Case "N"
+            '*****  PUNKTY NA MODELSPACE *****
+            'Lewy dolny punkt
+            mSpacePoint_1(0) = 0: mSpacePoint_1(1) = 0
+            'Prawy gorny punkt
+            mSpacePoint_2(0) = 210: mSpacePoint_2(1) = 297
+            
+            '*****  PUNKTY NA PAPERSPACE *****
+            'Lewy dolny punkt
+            pSpacePoint_1(0) = -531.37: pSpacePoint_1(1) = 0.76
+            'Prawy gorny punkt
+            pSpacePoint_2(0) = -321.37: pSpacePoint_2(1) = 297.76
+    End Select
+    
+
+    '*****  DYSTANS MIEDZY LAYOUTAMI *****
+    
+    'Dystans pomiedzy kolejnymi arkuszami
+    distanceBetween = ThisDrawing.Utility.GetDistance(, "Podaj odstep: ")
+    
+    'Podaj ilosc layoutów do stworzenia
+    nOfLayouts = ThisDrawing.Utility.GetInteger("Podaj ilosc layoutów do stworzenia: ")
     
     
-    'Algorytm sortowania b¹belkowego, sortujemy rosn¹co po pozycji X bloku
-    blockRefArray = BubbleSortByInsertionPoint(blockRefArray, acAscending)
+    ThisDrawing.Utility.InitializeUserInput 2, "T N"
     
-    '*****  ZMIANA ATRYBUTU *****
+    Dim deleteLayouts As String
+    deleteLayouts = ThisDrawing.Utility.GetString(1, prompt:="Usunac wszystkie layouty [Tak/Nie]?")
     
-    Dim attNum As Long
-    attNum = 1
+    Dim lastLayoutNumber As Long
+
+    Select Case (deleteLayouts)
     
-    'Zmiana atrybutu numer 2 w bloku ( = ARKUSZ)
-    For j = LBound(blockRefArray) To UBound(blockRefArray)
-        Set blockRefObj = blockRefArray(j)
-        varAttributes = blockRefObj.GetAttributes
+        Case "T"
+            '*****  KASOWANIE ISTNIEJACYCH LAYOUTÓW *****
+            MsgBox "Kasowanie istniejacych layoutów", vbInformation
+    
+            'Skasowanie wszystkich layoutów innych niz 1
+            For Each Layout In ThisDrawing.Layouts
+                If Layout.Name <> "1" And Layout.Name <> "Model" Then
+                    Layout.Delete
+                End If
+            Next Layout
+            
+            lastLayoutNumber = 1
+        Case "N"
+            lastLayoutNumber = CInt(ThisDrawing.Layouts.Item(ThisDrawing.Layouts.count - 2).Name)
+            
+            If (nOfLayouts <= lastLayoutNumber) Then
+                MsgBox "Podana ilosc layoutów do stworzenia jest mniejsza niz liczba istniejacych layoutów", vbCritical
+                Exit Sub
+            End If
+        Case Else
+    End Select
+    
+    '*****  TWORZENIE NOWYCH LAYOUTÓW *****
+    MsgBox "Tworzenie nowych layoutów", vbInformation
+    
+    Dim aPVPort As AcadPViewport
+    Dim aEnt As AcadEntity
+    Dim lowerLeftPt(2) As Double, upperRightPt(2) As Double
         
-        Set attRef = varAttributes(attNum)
-        attRef.textString = CStr(pageCount)
-        pageCount = pageCount + 1
-    Next j
+    lowerLeftPt(0) = mSpacePoint_1(0): lowerLeftPt(1) = mSpacePoint_1(1): lowerLeftPt(2) = 0
     
-    'Wyœwietlenie liczby stron do zmiany w bloku
-    MsgBox "Zakoñczono numerowanie stron." & vbCrLf & _
-           "Liczba stron: " & CStr(pageCount - 1)
+    upperRightPt(0) = mSpacePoint_2(0): upperRightPt(1) = mSpacePoint_2(1): upperRightPt(2) = 0
+    
+    lowerLeftPt(1) = mSpacePoint_1(1): lowerLeftPt(2) = 0
+    
+    upperRightPt(1) = upperRightPt(1): upperRightPt(2) = upperRightPt(2)
+       
+    'Zaczynamy od konca i iterujemy do poczatku
+    For i = nOfLayouts To lastLayoutNumber Step -1
+        'Kopiujemy layout numer 1
+        ThisDrawing.SendCommand "_layout _C" & vbCr & "1" & vbCr & CStr(i) & vbCr
+
+        ThisDrawing.ActiveLayout = ThisDrawing.Layouts(CStr(i))
+        
+        For Each aEnt In ThisDrawing.ActiveLayout.Block
+            If TypeOf aEnt Is AcadPViewport Then
+                Set aPVPort = aEnt
+                Exit For
+            End If
+        Next aEnt
+        
+        lowerLeftPt(0) = mSpacePoint_1(0) + (i - 1) * distanceBetween
+        upperRightPt(0) = mSpacePoint_2(0) + (i - 1) * distanceBetween
+        
+        ThisDrawing.MSpace = True
+        ThisDrawing.Application.ZoomWindow lowerLeftPt, upperRightPt
+        ThisDrawing.MSpace = False
+    Next i
+    
+    ThisDrawing.SetVariable "LAYOUTREGENCTL", layoutRegenCTL
 End Sub
 
 Sub CreateTableOfContents()
